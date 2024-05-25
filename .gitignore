@@ -159,6 +159,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 .vscode
-T5_model/data/raw
-T5_model/data/processed
+T5_model/data/raw/*
+!T5_model/data/raw/.gitignore
+T5_model/data/processed/*
+!T5_model/data/processed/.gitignore
 T5_model/test
+T5_model/pre_tokenizer
+wandb

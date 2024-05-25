@@ -216,6 +216,33 @@ def process_zhihu():
         read_file = os.path.join(zhihu_dir, file)
         read_and_write_template(read_file, save_file_name, key_value=['INSTRUCTION', 'INSTRUCTION', 'RESPONSE'])
 
+def process_wiki_simple(groups_cnt=10000, max_len=512):
+    file_name = os.path.join(data_dir, 'zhwiki', 'wiki.txt')
+    save_file_name = os.path.join(processed_file_dir, 'zhwiki_simple.txt')
+
+    start_time = time.time()
+    if os.path.exists(save_file_name):
+        assert whether_deleta_file(save_file_name)
+    cc = OpenCC('t2s')
+    def process_line(line: str) ->str:
+        line = cc.convert(line)
+        line = re.sub(r"\「|\」|\｢|\｣|\『|\』", '\"', line)
+        line = re.sub(r"\，\）|\；\）", '）', line)  # 罗德·法尼(Rod Dodji Fanni，）
+        line = re.sub(r"\（\，|\(\，", '（', line)  # 阿魯拉·基馬(Alula Girma (，
+
+        line = convert_en_punctuation_to_zh_punct(line)
+        line = remove_duplicate_punctuation(line)
+        return line 
+    with open(file_name, 'r', encoding='utf-8') as read_file:
+        with open(save_file_name, 'a', encoding='utf-8') as f:
+            total_len = len(read_file.readlines())
+            read_file.seek(0)
+            for line in tqdm(read_file, total=total_len):
+                line = process_line(line)
+                f.write(line)
+    f.close()
+    end_time = time.time()
+    print(f"文件{file_name}处理完成, 用时{end_time - start_time}秒")
 def process_wiki(groups_cnt=10000, max_len=512):
     file_name = os.path.join(data_dir, 'zhwiki', 'wiki.txt')
     save_file_name = os.path.join(processed_file_dir, 'zhwiki.parquet')
@@ -415,6 +442,7 @@ if __name__ == "__main__":
     # process_zhihu()
 
     # 5.处理wiki数据集
+    process_wiki_simple()
     # process_wiki()
 
     # 将多个parquet合并为一个
@@ -425,4 +453,4 @@ if __name__ == "__main__":
     # 保存为text
     # parquet_to_text()
 
-    parquet_to_json()
+    # parquet_to_json()

@@ -17,3 +17,23 @@
 * Wikipedia使用了 [zhwiki](https://dumps.wikimedia.org/zhwiki/)   
   * 使用了20240520下的Recombine articles, templates, media/file descriptions, and primary meta-pages. 共2.4GB
   * bz2转换为wiki.txt参考了 [WikiExtractor](https://github.com/apertium/WikiExtractor) 
+  
+## Pre_tokenizer
+只使用Wikipedia的简体语料，作为分词的数据集
+本项目只采用了BPE分词，处理如下   
+*  进行NFKC()正则化
+*  pre_tokenizer为符号分开 数字分开(单独) 并且按照空格分开且替换为_   
+
+数据集总大小为1.6GB 在62.6G上 i7-12700KF，一次训练整个语料会出现swap,且非常卡。   
+选择进行buffer迭代缓冲进行训练，且训练的tokenizer保存为两个class 一种是tokenizer，一个是PreTrainedTokenizerFast
+
+## Model Train
+模型训练，我理解共分为以下几个步骤   
+* Tokenizer的实例化
+* ModelConfig和模型的实例化
+* 数据集的加载 包括加载、分词化(同时进行padding和截断)
+* 进行训练参数的实例化和collator
+* 模型训练
+
+在项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese?tab=readme-ov-file)中，虽然在collator中选择了max_length,但是padding=True 所以无效了，我最终选择在数据集加载中，处理数据集
+
