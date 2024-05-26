@@ -15,12 +15,14 @@ class TrainConfig:
     max_seq_length: int = 256
     output_dir: str = 'T5_model/pretrain'
     learning_rate: float = 5e-5
-    max_epochs: int = 3
+    max_epochs: int = 8
     gradient_accumulation_steps: int = 8
     learn_rate: float = 0.0001                      
     div_factor: int = 50
     warmup_steps: int = 1024
-    batch_size_per_gpu: int = 36
+    batch_size_per_gpu: int = 8
+    batch_size: int = 12
+    output_dir_pytorch: str = 'T5_model/pytorch_model'
 
 
 @dataclass

@@ -27,7 +27,7 @@
 数据集总大小为1.6GB 在62.6G上 i7-12700KF，一次训练整个语料会出现swap,且非常卡。   
 选择进行buffer迭代缓冲进行训练，且训练的tokenizer保存为两个class 一种是tokenizer，一个是PreTrainedTokenizerFast
 
-## Model Train
+## Model Train(Transformers)
 模型训练，我理解共分为以下几个步骤   
 * Tokenizer的实例化
 * ModelConfig和模型的实例化
@@ -37,3 +37,7 @@
 
 在项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese?tab=readme-ov-file)中，虽然在collator中选择了max_length,但是padding=True 所以无效了，我最终选择在数据集加载中，处理数据集
 
+## Model Train(PyTorch)
+使用了自己实现的T5model，在训练和评估的时候 都使用了交叉熵做为loss进行计算   
+风格为使用pytorch实现的模型训练方式   
+代码为pre_train_model.py 模型路径在src/models下面 包含了自己实现的Dataset和model

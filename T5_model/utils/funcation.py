@@ -4,7 +4,7 @@ from transformers import T5Config
 import torch
 from typing import Union
 from collections import Counter
-# from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import sentence_bleu
 
 def get_data(data_dir,tokenizer):
     dataset = Dataset.from_parquet(data_dir)
@@ -95,16 +95,17 @@ def get_bleu4_score(reference: Union[str, list[str]], outputs: Union[str, list[s
     return bleu
 
 if __name__ == "__main__":
-    ref = '抱歉，我不我知道ABB代表什么意思'
+    # ref = ['抱歉，我不我知道ABB代表什么意思', '天气好，你好啊']
+    # out = ['我不明白ABB是什么意思', '好天气，我不好']
+    ref = '我不我知道ABB代表什么意思'
     out = '我不明白ABB是什么意思'
     # b1 = sentence_bleu([list(out)], list(ref), weights=(0.25, 0.25, 0.25, 0.25))
     # print(b1)
-    b2 = get_bleu4_score(out, ref)
+    b2 = sentence_bleu(out, ref)
     print(b2)
-
+    print('----')
     candidate_corpus = ['i', 'have', 'a', 'pen', 'on', 'my', 'desk', 'a', 'b', 'c', 'd', 'f', 'f']
     reference_corpus = ['there', 'is', 'a', 'pen', 'on', 'my', 'desk', 'a', 'b', 'd', 'd', 'fd']
 
-    print('----')
     # print(sentence_bleu([reference_corpus], candidate_corpus, weights=(0.25, 0.25, 0.25, 0.25)))
     print(get_bleu4_score(reference_corpus, candidate_corpus))

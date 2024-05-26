@@ -165,4 +165,5 @@ T5_model/data/processed/*
 !T5_model/data/processed/.gitignore
 T5_model/test
 T5_model/pre_tokenizer
+T5_model/pretrain
 wandb

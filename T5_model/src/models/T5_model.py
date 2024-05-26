@@ -1,9 +1,10 @@
+import os 
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
 import math
 from transformers import PreTrainedTokenizerFast
-from config import ModelConfig
 import numpy as np
 class T5LayerNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
@@ -159,6 +160,14 @@ class T5Block(nn.Module):
 
 
 class T5model(nn.Module):
+    """
+    T5 model 分为编码器和解码器两个部分 
+    都有T5Block组成
+    encoder的T5Block只有self-attention
+    decoder的T5Block有self-attention和cross-attention
+    T5的位置编码也挺有意思 有点没看懂
+
+    """
     def __init__(self, vocab_size, d_model, num_heads, d_kv, d_ff, num_encoder_layers, num_decoder_layers, dropout, bos_id, padding_id):
         super().__init__()
         self.vocab_size = vocab_size
@@ -202,7 +211,7 @@ class T5model(nn.Module):
 
         attention_masks = torch.tril(torch.ones(decoder_hidden_states.shape[1], decoder_hidden_states.shape[1], dtype=torch.long, device=decoder_hidden_states.device))
         attention_masks = (1.0 - attention_masks) * torch.finfo(decoder_hidden_states.dtype).min
-        attention_masks = torch.tensor(attention_masks[None, None, :,:])
+        attention_masks = attention_masks[None, None, :,:].clone().detach()
         for layer in self.decoder:
             decoder_hidden_states, attention_masks, _,_ = layer(
                 hidden_states=decoder_hidden_states, attention_masks=attention_masks,
@@ -210,9 +219,39 @@ class T5model(nn.Module):
         sequence_output = decoder_hidden_states * (self.d_model ** -0.5)
         lm_logits = self.lm_head(sequence_output)
         return lm_logits
+    
+    def generation(self, input_ids, attention_masks, max_length):
+        hidden_states = self.embeddings(input_ids)
+        hidden_states = self.dropout(hidden_states)
+        if len(attention_masks.shape) == 2:
+            attention_masks = (1.0 - attention_masks) * torch.finfo(hidden_states.dtype).min
+            attention_masks = attention_masks[:, None, None, :]
 
+        _attention_masks = attention_masks
+        for layer in self.encoder:
+            hidden_states, attention_masks, _, _ = layer(hidden_states, attention_masks)
 
-    def train(self, input_ids, attention_masks, labels, criterion):
+        # 解码器开始
+        decoder_input = torch.full((input_ids.shape[0], 1), self.bos_id, dtype=torch.long, device=input_ids.device)
+        generated = decoder_input
+        for _ in range(max_length):
+            decoder_hidden_states = self.embeddings(generated)
+            decoder_hidden_states = self.dropout(decoder_hidden_states)
+
+            attention_masks = torch.tril(torch.ones(decoder_hidden_states.shape[1], decoder_hidden_states.shape[1], dtype=torch.long, device=decoder_hidden_states.device))
+            attention_masks = (1.0-attention_masks) * torch.finfo(hidden_states.dtype).min
+            attention_masks = attention_masks[None, None, :, :].clone().detach()
+            for layer in self.decoder:
+                decoder_hidden_states, attention_masks, _,_ = layer(
+                hidden_states=decoder_hidden_states, attention_masks=attention_masks,
+                encoder_hidden_state=hidden_states, encoder_attention_mask=_attention_masks)
+            sequence_output = decoder_hidden_states * (self.d_model ** -0.5)
+            next_token = torch.argmax(self.lm_head(sequence_output), dim=-1, keepdim=True)[:,0,:]
+            generated = torch.cat([generated, next_token], dim=1)
+            if (next_token == self.padding_id).all():
+                break
+        return generated
+    def train_net(self, input_ids, attention_masks, labels, criterion):
         logits = self.forward(input_ids, attention_masks, labels)
         labels = labels.to(logits.device)
         logits = logits.view(-1, self.vocab_size)
@@ -223,7 +262,7 @@ if __name__ == "__main__":
     ques = ["你读书的理由是什么[EOS]", "请简单介绍一下大连理工大学?谢谢您[EOS]"]
     ans = ["我爱我的祖国[EOS]", "大连理工最近建了理塘，它由校友出资,是世界的最高点[EOS]"]
 
-    tokenizer = PreTrainedTokenizerFast.from_pretrained('./tokenizer_fast')
+    tokenizer = PreTrainedTokenizerFast.from_pretrained('T5_model/pre_tokenizer/fast_tokenizer')
     input = tokenizer(ques, padding=True)
     ans = tokenizer(ans, padding=True)
 
@@ -236,13 +275,17 @@ if __name__ == "__main__":
     labels[labels == tokenizer.pad_token_id] = -100
 
     model = T5model(len(tokenizer.get_vocab()),
-                    d_model=ModelConfig.d_model, num_heads=ModelConfig.num_heads, d_kv=ModelConfig.d_kv,
-                    d_ff=ModelConfig.d_ff,num_encoder_layers=ModelConfig.num_layers,
-                    num_decoder_layers=ModelConfig.num_decoder_layers,dropout=0.1,
+                    d_model=768, num_heads=12, d_kv=64,
+                    d_ff=2048,num_encoder_layers=6,
+                    num_decoder_layers=6,dropout=0.1,
                     bos_id=tokenizer.bos_token_id, padding_id=tokenizer.pad_token_id)
     criterion = nn.CrossEntropyLoss(ignore_index=-100)
-    loss = model.train(input_ids, attention_masks, labels, criterion)
-
+    loss = model.train_net(input_ids, attention_masks, labels, criterion)
+    generated = model.generation(input_ids, attention_masks, 10)
+    text = tokenizer.batch_decode(generated, skip_special_tokens=True)
+    print(generated)
+    print(text)
+    
 
 
 

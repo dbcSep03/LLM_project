@@ -6,7 +6,7 @@ class T5Dataset(Dataset):
     def __init__(self,tokenizer, max_seq_length, train_data):
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_length
-        self.dataset = datasets.Dataset.from_parquet(train_data)
+        self.dataset = train_data
     def __len__(self):
         return len(self.dataset)
 
