@@ -167,3 +167,6 @@ T5_model/test
 T5_model/pre_tokenizer
 T5_model/pretrain
 wandb
+T5_model/pytorch_model
+T5_model/sft_model
+T5_model/dpo_model

@@ -15,7 +15,7 @@ def train():
     embedding_params = sum(p.numel() for p in model.shared.parameters())
     print(f"Total parameters: {total_params}, Trainable parameters: {trainable_params}, embedding_params: {embedding_params}, model_size: {total_params/1e9} B")
 
-    data = get_data(TrainConfig.data, tokenizer)
+    data = get_data(TrainConfig.data, tokenizer, max_length=255)
 
     data = data.train_test_split(test_size=0.1)
     

@@ -6,18 +6,26 @@ from typing import Union
 from collections import Counter
 from nltk.translate.bleu_score import sentence_bleu
 
-def get_data(data_dir,tokenizer):
+def get_data(data_dir,tokenizer, max_length):
     dataset = Dataset.from_parquet(data_dir)
     def process_example(example):
         prompt = example['prompt']
         response = example['response']
-        prompt = tokenizer(prompt, padding=False, truncation=True, return_attention_mask=False, max_length=255)
-        response = tokenizer(response, padding=False, truncation=True, return_attention_mask=False, max_length=255)
+        prompt = tokenizer(prompt, padding=False, truncation=True, return_attention_mask=False, max_length=max_length)
+        response = tokenizer(response, padding=False, truncation=True, return_attention_mask=False, max_length=max_length)
         prompt = [np.array(sent + [tokenizer.eos_token_id],dtype=np.uint16)for sent in prompt["input_ids"]]
         response = [np.array(sent + [tokenizer.eos_token_id], dtype=np.uint16)for sent in response["input_ids"]]
         return {"input_ids": prompt, "labels": response}
     return dataset.map(process_example, batched=True, remove_columns=dataset.column_names)
 
+def get_data_for_dpo(data_dir, tokenizer, max_length):
+    dataset = Dataset.from_parquet(data_dir)
+    def process_example(example):
+        prompts = [f"{prompt}[EOS]" for prompt in example['prompt']]
+        chosens = [f"{chosen}[EOS]" for chosen in example['chosen']]
+        rejecteds = [f"{rejected}[EOS]" for rejected in example['rejected']]
+        return {"prompt": prompts, "chosen": chosens, "rejected": rejecteds}
+    return dataset.map(process_example, batched=True, remove_columns=dataset.column_names)
 
 def get_model_config(vocab_size, model_config, decoder_start_token_id, eos_token_id):
     config = T5Config()

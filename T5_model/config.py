@@ -16,8 +16,7 @@ class TrainConfig:
     output_dir: str = 'T5_model/pretrain'
     learning_rate: float = 5e-5
     max_epochs: int = 8
-    gradient_accumulation_steps: int = 8
-    learn_rate: float = 0.0001                      
+    gradient_accumulation_steps: int = 8               
     div_factor: int = 50
     warmup_steps: int = 1024
     batch_size_per_gpu: int = 8
@@ -40,4 +39,24 @@ class ModelConfig:
 @dataclass
 class SFTConfig:
     max_seq_length: int = 256
-    train_data: str = 'dataset/sft.parquet'
+    train_data: str = 'T5_model/data/processed/belle_sft/sft_data.parquet'
+    fast_tokenizer: str = 'T5_model/pre_tokenizer/fast_tokenizer'
+    sft_model: str = 'T5_model/pretrain/checkpoint-76125'
+    batch_size_per_gpu: int = 8
+    gradient_accumulation_steps: int = 8
+    learning_rate: float = 1e-5 
+    max_epochs: int = 2
+
+
+@dataclass
+class DPOConfig:
+    model_path: str = 'T5_model/sft_model/checkpoint-73294'
+    tokenizer_fast: str = 'T5_model/pre_tokenizer/fast_tokenizer'
+    dpo_data: str = 'T5_model/data/processed/DPO/data.parquet'
+    max_length: int = 255
+    output_dir: str = 'T5_model/dpo_model'
+    batch_size_per_gpu: int = 16
+    gradient_accumulation_steps: int = 8
+    learning_rate = 5e-5
+    max_epochs: int = 2
+    logging_dir: str = 'T5_model/dpo_model/logs'
