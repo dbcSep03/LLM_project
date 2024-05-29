@@ -6,3 +6,4 @@ Learning LLM from Basic to Advanced
         * Encoder Decoder
             * T5 model
         * Decoder
+          * llama3
