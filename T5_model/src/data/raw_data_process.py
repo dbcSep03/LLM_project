@@ -14,7 +14,7 @@ import pyarrow.parquet as pq
 
 punctuation = set("!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~.,;《》？！“”‘’@#￥%…&×（）——+【】{};；●，。&～、|\s:：\n") # 标点符号
 data_dir = '/home/dongbingcheng/LLM_study/T5_model/data/raw'
-processed_file_dir = '/home/dongbingcheng/LLM_study/T5_model/data/processed'
+processed_file_dir = 'T5_model/data/processed'
 en_punctuation = ",().!;:"
 zh_punctuation = "，（）。！；："
 

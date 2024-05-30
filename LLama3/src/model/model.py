@@ -218,13 +218,8 @@ class LLamamodel(nn.module):
         if attention_mask is not None and pre_trained:
             return attention_mask
         else:
-            """
-            Todo attention mask 如何解决 sft和pretrained之间的区别 
-            """
             causal_mask = torch.full((sequence_length, sequence_length),fill_value=min_dtype, dtype=dtype, device=device)
             causal_mask = torch.triu(causal_mask, diagonal=1)
+            # expand中-1表示维度不进行变化
             causal_mask = causal_mask[None, None, :, :].expand(attention_mask.shape[0], 1, -1, -1)
-            if not pre_trained:
-                causal_mask = causal_mask.clone()
-                causal_mask = causal_mask.to(dtype).masked_fill(causal_mask == 0, float('-inf'))
         return causal_mask

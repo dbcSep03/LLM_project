@@ -170,3 +170,9 @@ wandb
 T5_model/pytorch_model
 T5_model/sft_model
 T5_model/dpo_model
+
+LLama3/dataset/raw/*
+!LLama3/dataset/raw/.gitignore
+LLama3/dataset/processed/*
+!LLama3/dataset/processed/.gitignore
+LLama3/tokenizer
