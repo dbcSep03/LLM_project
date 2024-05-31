@@ -16,14 +16,14 @@ class RMSNorm(nn.Module):
         return self.weight * hidden_states.type(dtype)
 
 class LlamaRotaryEmbedding(nn.Module):
-    def __init__(self, head_size, config, device):
+    def __init__(self, head_size, config):
         super().__init__()
         self.size = head_size
         self.max_position_embeddings = config.seq_length
         self.base = config.rotary_base
         # 1/10000^(2i/d) 2i/d是因为sin和cos两个维度 将2个看作一组  还有个问题 self.inv_freq 不能直接等于 这样需要单独的加载和保存
-        # self.inv_freq = 1 / (self.base ** (torch.arange(0, self.size, 2, dtype=torch.int64).float().to(device)/self.dim))
-        inv_freq = 1 / (self.base ** (torch.arange(0, self.size, 2, dtype=torch.float32).to(device)/self.size))
+        # self.inv_freq = 1 / (self.base ** (torch.arange(0, self.size, 2, dtype=torch.int64).float()/self.dim))
+        inv_freq = 1 / (self.base ** (torch.arange(0, self.size, 2, dtype=torch.float32)/self.size))
         self.register_buffer("inv_freq", inv_freq)
     
     @torch.no_grad()
@@ -35,7 +35,7 @@ class LlamaRotaryEmbedding(nn.Module):
         inv_freq_expand = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
         # position_ids: [bsz, 1, seq_length]
         position_ids_expand = position_ids[:,None,:].float()
-        device_type = x.device_type
+        device_type = x.device.type
         with torch.autocast(device_type=device_type, enabled=False):
             """防止精度混合"""
             # 由于@进行矩阵计算  [bsz, head_size//2, 1] * [bsz, 1, seq_length] -> [bsz, head_size//2, seq_length] -> [bsz, seq_length, head_size//2]
@@ -50,8 +50,8 @@ def applay_rotary_pos_emb(query, key, sin, cos, unsqueeze_dim = 1):
     def rotate_half(x):
         # x: [bsz, seq_length, num_heads, head_size]
         # x1: [bsz, seq_length, num_heads, head_size//2] x2:[bsz, seq_length, num_heads, head_size//2]
-        x1 = x[..., :x.size(-1)//2]
-        x2 = x[..., x.size(-1)//2:]
+        x1 = x[..., :x.shape[-1]//2]
+        x2 = x[..., x.shape[-1]//2:]
         return torch.cat((-x2, x1), dim=-1)
     cos = cos.unsqueeze(unsqueeze_dim)
     sin = sin.unsqueeze(unsqueeze_dim)
@@ -70,16 +70,20 @@ def repeat_kv(kv, num_groups):
     kv = kv[:, :, None, :, :].expand(bsz, num_qv_heads, num_groups, seq_length, head_size)
     # [bsz, num_qv_heads, num_groups, seq_length, head_size] -> [bsz, num_qv_heads * num_groups, seq_length, head_size]
     # 维度对齐
-    return kv.view(bsz, num_qv_heads * num_groups, seq_length, head_size)
+    return kv.contiguous().view(bsz, num_qv_heads * num_groups, seq_length, head_size)
 
 class LLamaAttention(nn.Module):
     def __init__(self,config):
         super().__init__()
         self.config = config
         self.num_heads = config.num_heads
-        self.head_size = self.hidden_size // self.num_heads
+        self.hidden_size = config.hidden_size
+        self.num_key_value_heads = config.num_key_value_heads
         
+        self.head_size = self.hidden_size // self.num_heads
         self.num_key_value_groups = self.num_heads // self.num_key_value_heads
+        
+        self.rotary_embedding = LlamaRotaryEmbedding(self.head_size, config)
 
         self.q = nn.Linear(self.hidden_size, self.head_size * self.num_heads, bias=config.bias)
         self.k = nn.Linear(self.hidden_size, self.head_size * self.num_key_value_heads, bias=config.bias)
@@ -101,7 +105,7 @@ class LLamaAttention(nn.Module):
         # 关于group attention, 可以看看上面的链接 但是有问题在于图中 keys和query 就应该两两相连
         # 我的理解是 如果不repeat的话 维度有问题 无法相乘 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
-
+        value_states = repeat_kv(value_states, self.num_key_value_groups)
         attn_weights = torch.matmul(query_states, key_states.transpose(-1, -2))/ (self.head_size**0.5)
 
         if attn_weights is not None:
@@ -155,11 +159,13 @@ class LLamaDecoder(nn.Module):
         output = self.mlp(hidden_states)
         return output + residual
 
-class LLamamodel(nn.module):
+class LLamamodel(nn.Module):
     def __init__(self,config):
         super(LLamamodel, self).__init__()
         self.vocab_size = config.vocab_size
-        self.embedding = nn.Embedding(config.embedding_size, config.hidden_size)
+        self.padding_idx = config.padding_idx
+        self.config = config
+        self.embedding = nn.Embedding(config.vocab_size, config.hidden_size, config.padding_idx)
 
         self.embedding_rmsnorm = RMSNorm(config.hidden_size)
 
@@ -169,8 +175,8 @@ class LLamamodel(nn.module):
         
         self.norm = RMSNorm(config.hidden_size)
         
-        # 直接将hidden_size映射到embedding_size
-        self.m_head = nn.Linear(config.hidden_size, config.embedding_size, bias=False)
+        # 直接将hidden_size映射到vocab_size
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
     
     def forward(self, 
                 input_ids: torch.LongTensor,
@@ -188,7 +194,7 @@ class LLamamodel(nn.module):
         if position_ids is None:
             position_ids = torch.arange(0, input_ids.size(1), device=input_ids.device).unsqueeze(0)
         
-        causal_mask = self._update_causal_mask(attention_mask, hidden_states, self.config.pre_trained)
+        causal_mask = self._update_causal_mask(attention_mask, hidden_states)
         
         for decoder in self.decoder:
             hidden_states = decoder(hidden_states, causal_mask, position_ids)
@@ -211,15 +217,15 @@ class LLamamodel(nn.module):
 
             
         
-    def  _update_causal_mask(attention_mask, hidden_states, pre_trained=False):
+    def  _update_causal_mask(self, attention_mask, hidden_states):
         dtype, device = hidden_states.dtype, hidden_states.device
         min_dtype = torch.finfo(dtype).min
         sequence_length = hidden_states.shape[1]
-        if attention_mask is not None and pre_trained:
+        if attention_mask is not None:
             return attention_mask
         else:
             causal_mask = torch.full((sequence_length, sequence_length),fill_value=min_dtype, dtype=dtype, device=device)
             causal_mask = torch.triu(causal_mask, diagonal=1)
             # expand中-1表示维度不进行变化
-            causal_mask = causal_mask[None, None, :, :].expand(attention_mask.shape[0], 1, -1, -1)
+            causal_mask = causal_mask[None, None, :, :].expand(hidden_states.shape[0], 1, -1, -1)
         return causal_mask

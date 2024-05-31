@@ -391,7 +391,40 @@ def merge_dataset_as_single_file():
     combined_df.to_parquet(save_file_name)
 
 
+def get_pretrain_data(data_all_dir: str='LLama3/dataset/processed/all_data.parquet',save_path: str = 'LLama3/dataset/processed/pretrain_data.parquet'): 
+    from transformers import PreTrainedTokenizerFast
+    from datasets import Dataset
+    tokenizer = PreTrainedTokenizerFast.from_pretrained('LLama3/tokenizer/fast_tokenizer')
+    data_all = Dataset.from_parquet(data_all_dir)
+    if os.path.exists(save_path):
+        assert whether_deleta_file(save_path)
+    def map_function(examples):
+        input_id = tokenizer(examples['prompt'], padding=False, truncation=False)['input_ids']
+        return {'input_ids': input_id}
+    
+    data_all = data_all.map(map_function, batched=True, remove_columns=['prompt'])
 
+    token_ids_batch = []
+    token_ids_all = []
+    """
+    形成batch
+    """
+    for line in tqdm(data_all, total=len(data_all)):
+        input_id = line['input_ids']    
+        token_ids_batch.extend(input_id)
+        if len(token_ids_batch) > 512:
+            token_ids_all.append({'input_ids': token_ids_batch[:512]})
+            token_ids_batch = token_ids_batch[512:]
+            if len(token_ids_all) >= 10000:
+                token_ids_all_dataframe = pd.DataFrame(token_ids_all)
+                write(filename=save_path, data=token_ids_all_dataframe, append=os.path.exists(save_path))
+                token_ids_all= []
+    if len(token_ids_batch) > 0:
+        token_ids_all.append({'input_ids': token_ids_batch})
+    token_ids_all_dataframe = pd.DataFrame(token_ids_all)
+    if len(token_ids_all) > 0:
+        token_ids_all_dataframe.to_parquet(save_path)
+        write(save_path, token_ids_all_dataframe, append=os.path.exists(save_path))
 if __name__ == "__main__":
     # # 处理shareAI的数据
     # process_shareAI_data()
@@ -406,6 +439,12 @@ if __name__ == "__main__":
     # process_belle_data()
 
     # # 合并数据集
-    merge_dataset_as_single_file()
+    # merge_dataset_as_single_file()
+
+    # 使用zhwiki的简体数据训练完tokenizer之后 生成最终的pretrain数据集
+    # 本来想放到train的数据预处理中，但发现数据集太大 太消耗内存了 
+
+    get_pretrain_data()
+    
     
     
