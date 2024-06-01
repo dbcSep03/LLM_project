@@ -74,7 +74,7 @@ def write_single_parquet_file(file_name: str, data: pd.DataFrame) ->None:
     append = False
     if os.path.exists(file_name):
         append = True
-    write(file_name, data, append=append)
+    write(file_name, data, append=append,compression='GZIP',)
 
 
 def process_line_data(prompt, response, response_less_word: int=15) ->dict:
@@ -398,9 +398,10 @@ def get_pretrain_data(data_all_dir: str='LLama3/dataset/processed/all_data.parqu
     data_all = Dataset.from_parquet(data_all_dir)
     if os.path.exists(save_path):
         assert whether_deleta_file(save_path)
+    
     def map_function(examples):
-        input_id = tokenizer(examples['prompt'], padding=False, truncation=False)['input_ids']
-        return {'input_ids': input_id}
+        input_ids = tokenizer(examples['prompt'], padding=False, truncation=False)['input_ids']
+        return {'input_ids': input_ids}
     
     data_all = data_all.map(map_function, batched=True, remove_columns=['prompt'])
 
@@ -409,22 +410,25 @@ def get_pretrain_data(data_all_dir: str='LLama3/dataset/processed/all_data.parqu
     """
     形成batch
     """
+    token_ids_length = 0
     for line in tqdm(data_all, total=len(data_all)):
-        input_id = line['input_ids']    
+        input_id = line['input_ids']
+        token_ids_length += len(input_id)
         token_ids_batch.extend(input_id)
-        if len(token_ids_batch) > 512:
+        while(len(token_ids_batch) > 512):
             token_ids_all.append({'input_ids': token_ids_batch[:512]})
             token_ids_batch = token_ids_batch[512:]
-            if len(token_ids_all) >= 10000:
-                token_ids_all_dataframe = pd.DataFrame(token_ids_all)
-                write(filename=save_path, data=token_ids_all_dataframe, append=os.path.exists(save_path))
-                token_ids_all= []
-    if len(token_ids_batch) > 0:
-        token_ids_all.append({'input_ids': token_ids_batch})
-    token_ids_all_dataframe = pd.DataFrame(token_ids_all)
+        if len(token_ids_all) >= 10000:
+            token_ids_all_dataframe = pd.DataFrame(token_ids_all)
+            write_single_parquet_file(save_path, token_ids_all_dataframe)
+            token_ids_all= []
+    while len(token_ids_batch) >= 512:
+        token_ids_all.append({'input_ids': token_ids_batch[:512]})
+        token_ids_batch = token_ids_batch[512:]
     if len(token_ids_all) > 0:
-        token_ids_all_dataframe.to_parquet(save_path)
-        write(save_path, token_ids_all_dataframe, append=os.path.exists(save_path))
+        token_ids_all_dataframe = pd.DataFrame(token_ids_all)
+        write_single_parquet_file(save_path, token_ids_all_dataframe)
+    print(f"处理完成, token长度{token_ids_length}")
 if __name__ == "__main__":
     # # 处理shareAI的数据
     # process_shareAI_data()

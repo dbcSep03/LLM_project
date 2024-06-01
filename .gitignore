@@ -176,3 +176,5 @@ LLama3/dataset/raw/*
 LLama3/dataset/processed/*
 !LLama3/dataset/processed/.gitignore
 LLama3/tokenizer
+LLama3/best_model_pytorch/model_best.checkpoint
+LLama3/checkpoints/LLama_pretrain.pth/model.safetensors

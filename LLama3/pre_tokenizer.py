@@ -12,7 +12,8 @@ def train_tokenizer():
     tokenizer.normalizer = NFKC()
     tokenizer.add_special_tokens(special_tokens)
     tokenizer.decoder = tokenizers.decoders.Metaspace()
-    trainer = BpeTrainer(special_tokens=special_tokens, vocab_size=65535, min_frequency=50)
+    # 考虑到bert的tokenizer的vocab_size为30522 所以设置为了30000
+    trainer = BpeTrainer(special_tokens=special_tokens, vocab_size=30000, min_frequency=100)
     tokenizer.train(files=['LLama3/dataset/processed/zhwiki_simple.txt'], trainer=trainer)
     tokenizer.save('LLama3/tokenizer/slow_tokenizer')
     if '\t' not in tokenizer.get_vocab():

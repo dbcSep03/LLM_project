@@ -26,7 +26,33 @@ llama2和llama3好像没有什么架构上的区别,主要看了transformers的L
 * [ruozhiba](https://huggingface.co/datasets/LooksJuicy/ruozhiba)   
   * 经典弱智吧    
 
-处理的
+处理的代码路径为src/data/process_raw_data.py   
+最终在fast总数据集大小为1.7GB(使用fastparquet的write)
+在这个过程中遇到的问题：  
+* 数据保存使用fastparquet 而读取使用pandas 默认读取出来为bytes
+* 数据集1.7G pandas读取时间长   
+
+解决如下
+```python
+import dask.dataframe as dd
+import pandas as pd
+
+start_time = time.time()
+# 通过指定engine 解决了第一个问题
+data = pd.read_parquet('LLama3/dataset/processed/pretrain_data.parquet', engine='fastparquet')
+print(time.time() - start_time, len(data))
+# 70s左右
+
+start_time = time.time()
+data = dd.read_parquet('LLama3/dataset/processed/pretrain_data.parquet')
+print(time.time() - start_time, len(data))
+# 0.2s
+```
+觉得dask.dataframe效果很好 而且相较于pandas,内存消耗更小 
+64G的内存 当读取的时候，内存占用可以到40G,很奇怪
+
+> 我又到了晚上重新尝试了一下 pd.read_parquet('LLama3/dataset/processed/pretrain_data.parquet')可以正常读了，没有b'[]'的形式 小小的脑袋大大的疑惑
+
 
 
    
