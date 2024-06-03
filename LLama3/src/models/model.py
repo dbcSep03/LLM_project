@@ -229,3 +229,16 @@ class LLamamodel(nn.Module):
             # expand中-1表示维度不进行变化
             causal_mask = causal_mask[None, None, :, :].expand(hidden_states.shape[0], 1, -1, -1)
         return causal_mask
+    
+    @torch.inference_mode()
+    def generate(self, input_ids, attention_masks=None, max_length=512):
+        generated = input_ids
+        for _ in range(max_length):
+            position_ids = torch.arange(0,generated.size(1), device=generated.device).unsqueeze(0)
+            logits, _ = self.forward(generated, attention_masks, position_ids)
+            next_token = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(-1)
+            generated = torch.cat([generated, next_token], dim=1)
+            if next_token.item() == self.config.eos_token_id:
+                break
+        return generated
+        

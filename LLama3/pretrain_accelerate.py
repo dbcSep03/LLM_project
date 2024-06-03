@@ -20,7 +20,7 @@ def pretrain_by_pytorch():
     #加载tokenizer 和 model 并统计相关信息
     tokenizer = PreTrainedTokenizerFast.from_pretrained(trainConfig.tokenizer_path)
     # 使用len(tokenizer)获取vocab_size 而不是tokenizer.vocab_size()
-    config = modleConfig(vocab_size = len(tokenizer), padding_idx=tokenizer.pad_token_id)
+    config = modleConfig(vocab_size = len(tokenizer), padding_idx=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id)
     model = LLamamodel(config)
     total_nums = sum(param.numel() for param in model.parameters())
     trained_nums = sum(param.numel() for param in model.parameters() if param.requires_grad) 

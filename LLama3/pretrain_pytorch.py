@@ -20,6 +20,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from tqdm.auto import tqdm
 import torch
+import json
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
@@ -32,7 +33,7 @@ def cleanup():
 def pretrain_by_pytorch(rank, word_size):
     setup(rank, word_size)
     tokenizer = PreTrainedTokenizerFast.from_pretrained(trainConfig.tokenizer_path)
-    config = modleConfig(vocab_size = len(tokenizer), padding_idx=tokenizer.pad_token_id)
+    config = modleConfig(vocab_size = len(tokenizer), padding_idx=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id)
     model = LLamamodel(config).to(rank)
     ddp_model = DDP(model, device_ids=[rank])
 
@@ -50,7 +51,7 @@ def pretrain_by_pytorch(rank, word_size):
     optimizer = Adam(model.parameters(), lr=5e-5)
     scheduler = CosineAnnealingLR(optimizer, len(train_dataloader) * trainConfig.epochs//trainConfig.gradient_accumulation_steps)
 
-
+    loss_batch = 0
     for epoch in range(trainConfig.epochs):
         best_loss = 100000
         for idx, input_id in tqdm(enumerate(train_dataloader), total=len(train_dataloader), desc=f'epoch {epoch+1}/{trainConfig.epochs}', disable=not rank==0):
@@ -59,14 +60,19 @@ def pretrain_by_pytorch(rank, word_size):
             logits = logits[...,:-1,:].contiguous().view(-1, config.vocab_size)
             labels = input_id[...,1:].contiguous().view(-1)
             loss = criterion(logits, labels)
+            loss_batch += loss.item()
             loss.backward()
             if (idx + 1) % trainConfig.gradient_accumulation_steps == 0:
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
-        if loss.item() < best_loss and rank == 0:
-            best_loss = loss.item()
-            torch.save(model.state_dict(), f'LLama3/best_model_pytorch/model_best.checkpoint')
+                
+                if (loss_batch/8) < best_loss and rank == 0:
+                    best_loss = loss_batch/8
+                    torch.save(model.state_dict(), f'LLama3/best_model_pytorch/model_best.checkpoint')
+                    with open('LLama3/best_model_pytorch/loss.txt', 'w') as f:
+                        json.dump({'loss': best_loss, 'epoch': epoch+1, 'idx': idx+1}, f)
+                loss_batch = 0
     cleanup()
 
 def main(pretrain_by_pytorch, world_size):

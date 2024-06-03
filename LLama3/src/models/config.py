@@ -3,6 +3,7 @@ from dataclasses import dataclass
 class modleConfig:
     vocab_size: int
     padding_idx: int
+    eos_token_id: int
     hidden_size: int = 1024
     layer: int = 10
     num_heads: int = 16
@@ -23,4 +24,5 @@ class trainConfig:
     seq_length: int = 512
     epochs: int = 8
     gradient_accumulation_steps: int = 8
-    batch_size: int = 12
+    batch_size: int = 16
+
