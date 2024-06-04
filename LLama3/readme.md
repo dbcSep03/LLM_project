@@ -52,10 +52,35 @@ print(time.time() - start_time, len(data))
 64G的内存 当读取的时候，内存占用可以到40G,很奇怪
 
 > 我又到了晚上重新尝试了一下 pd.read_parquet('LLama3/dataset/processed/pretrain_data.parquet')可以正常读了，没有b'[]'的形式 小小的脑袋大大的疑惑
+## Model Pretrain
+预训练使用了两种方式，一个是accelerate方式实现、一个是torchrun的方式
+### accelerate方式
+使用accelerate包装了一下 在运行之前，需要使用```accelerate config``` 设置一下。如果想要多卡运行，需要使用```accelerate launch --multi-gpu {.py} ```    
+loss图如下：
+![accelerate预训练](img/accelerate-pretrain.png)     
+
+由于是双卡，我将两张卡的loss都保存下来了，感觉不如使用tranformers的loss损失平滑，可能有没注意到的细节。
+
+演示效果：
+![accelerate演示](img/accelerate-output.gif)
+很明显有以下问题 需要解决：
+* 输出重复
+* 前后语境不搭
+* <eos>未结束， tokenizer的时候有空格
+
+### torchrun 双卡分布训练    
+机器为i7-12700KF+64G+双卡4090
+训练的时候遇到了两个问题:    
+* ```train_dataloader = DataLoader(dataset, batch_size=trainConfig.batch_size // world_size, shuffle=False, collate_fn=dataset.collate_fn, num_workers=4, sampler=sampler)```会出现炸内存的情况，数据集2G 内存64G，会直接超出。(不是显存)    
+  * [num_workers>0的问题](https://github.com/pytorch/pytorch/issues/13246) 通过查阅，发现是dataloader的加载的问题   
+* 训练速度 accelerate在bs=12的情况下，单卡显存为14G，但是一个epoch7h，而torchrun在bs=12时，显存为10G，但是一个epoch在72h多，很奇怪      
+  * 我仔细想了一下，可能是我在accelerate config中设置了bf16,改完之后，并没有变得那么快，还是六十多个小时，但是显存降到了8.4G    
+  * 感觉更加奇怪的是，我将双卡torchrun(pretrain_pytorch.py)代码改为单卡训练(pretrain_model.py),bs=12时，只需要12h(默认float32),就算没有连接桥，也不应该那么慢，很amazing    
+  * 欢迎帮忙修改，谢谢
+  * 最终选择使用单卡训练 而不是双卡
 
 
 
-   
 > 相关资料   
 > 分词化：[BPE](https://github.com/karpathy/minbpe)   
 > LLama3 from scratch: [LLama3 from scratch](https://github.com/naklecha/llama3-from-scratch) (阿尼亚很可爱)   

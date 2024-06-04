@@ -48,7 +48,7 @@ def pretrain_by_pytorch():
                 logits = logits[...,:-1,:].contiguous().view(-1, config.vocab_size)
                 labels = input_id[...,1:].contiguous().view(-1)
                 loss = criterion(logits, labels)/trainConfig.gradient_accumulation_steps
-                wandb.log({'loss': loss.item()})
+                # wandb.log({'loss': loss.item()})
                 # print((loss*trainConfig.gradient_accumulation_steps).item())
                 # print(accelerator.device)
                 accelerator.backward(loss)
@@ -63,12 +63,12 @@ def pretrain_by_pytorch():
         
 
 if __name__ == '__main__':
-    wandb.init(project='LLama3',
-            config={
-                    'model': 'LLama',
-                    'epochs': 8,
-                    'gradient_accumulation_steps': 8,
-                    'whether_multi_gpus': False,
-            })
+    # wandb.init(project='LLama3',
+    #         config={
+    #                 'model': 'LLama',
+    #                 'epochs': 8,
+    #                 'gradient_accumulation_steps': 8,
+    #                 'whether_multi_gpus': False,
+    #         })
 
     pretrain_by_pytorch()

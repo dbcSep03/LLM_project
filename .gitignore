@@ -178,3 +178,4 @@ LLama3/dataset/processed/*
 LLama3/tokenizer
 LLama3/best_model_pytorch/model_best.checkpoint
 LLama3/checkpoints/LLama_pretrain.pth/model.safetensors
+LLama3/best_model_pytorch/loss.txt
