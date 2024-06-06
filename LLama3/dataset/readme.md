@@ -18,12 +18,16 @@
 ## SFT data process
   * [BELLE Group](https://huggingface.co/BelleGroup)   
     * 包含了[generated_chat_0.4M](https://huggingface.co/datasets/BelleGroup/generated_chat_0.4M) 和[train_0.5M_CN](https://huggingface.co/datasets/BelleGroup/train_0.5M_CN)
+    * 总中文字符为274882143
   * [shareAI 数据集](https://modelscope.cn/datasets/baicai003/Llama3-Chinese-dataset/summary)
     * 感觉数据质量本身非常优秀，同时作为SFT数据集
+    * 和pretrained_data一样 总中文字符为455168273
   * [m-a-p/COIG-CQIA](https://huggingface.co/datasets/m-a-p/COIG-CQIA)
     * shareAI数据集中包括，但感觉不完全，使用了全部
+    * 总中文字符为48014083
   * [lyuricky/alpaca_data_zh_51k](https://huggingface.co/datasets/lyuricky/alpaca_data_zh_51k)
     * alpaca数据集的中文
+    * 总中文字符为5477887
   
 ## 期望的数据结构
 ```

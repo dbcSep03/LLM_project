@@ -81,7 +81,7 @@ def write_single_parquet_file(file_name: str, data: pd.DataFrame) ->None:
         append = True
     write(file_name, data, append=append,compression='GZIP',)
 
-def process_shareAI_data(data_dir: str='LLama3/dataset/raw/shareAI', save_file_name: str='LLama3/dataset/processed/shareAI.parquet', group_cnt: int=10000) ->None:
+def process_shareAI_data(data_dir: str='LLama3/dataset/raw/shareAI', save_file_name: str='LLama3/dataset/sft/shareAI.parquet', group_cnt: int=10000) ->None:
     """
     处理shareAI的数据
     """
@@ -189,7 +189,7 @@ def process_belle_data():
         print(f"文件{read_file}处理完成, 用时{end_time - start_time}秒, 原始数据{raw_line_cat}条, 保留数据{keep_line_cat}条, token长度{token_length}")
     print(f"belle所有文件处理完成, token长度{token_length_all}")
 
-def process_CQIA_data():
+def process_CQIA_data(data_dir='LLama3/dataset/raw', processed_file_dir='LLama3/dataset/sft'):
     """
     处理COIG-CQIA数据集
     """
@@ -204,7 +204,9 @@ def process_CQIA_data():
     with open(data_dir, 'r', encoding='utf-8') as f:
         cur_rows = []
         append = cur_rows.append
-        for line in tqdm(f):
+        total_length = len(f.readlines())
+        f.seek(0)
+        for line in tqdm(f, total=total_length):
             raw_line_cat += 1
             line = ujson.loads(line)
             if len(line['input']) == 0:
@@ -232,8 +234,8 @@ def process_CQIA_data():
             cur_rows = []
     print(f"CQIA数据集处理完成, 原始数据{raw_line_cat}条, 保留数据{keep_line_cat}条, token长度{token_length}")
 
-def process_alpaca_data():
-    data_dir = os.path.join(data_dir, 'alpaca_data_zh_51k','alpaca_data_zh_51k.jsonl')
+def process_alpaca_data(data_dir='LLama3/dataset/raw', processed_file_dir='LLama3/dataset/sft'):
+    data_dir = os.path.join(data_dir, 'alpaca_data_zh_51k','alpaca_data_zh_51k.json')
     save_file_name = os.path.join(processed_file_dir, 'alpaca.parquet')
     if os.path.exists(save_file_name):
         assert whether_deleta_file(save_file_name)
@@ -242,11 +244,11 @@ def process_alpaca_data():
     raw_line_cat = 0
     keep_line_cat = 0
     with open(data_dir, 'r', encoding='utf-8') as f:
+        data = json.load(f)
         cur_rows = []
         append = cur_rows.append
-        for line in tqdm(f):
+        for line in tqdm(data,total=len(data)):
             raw_line_cat += 1
-            line = ujson.loads(line)
             if len(line['input']) == 0:
                 prompt = line['instruction']
             else:
@@ -288,8 +290,8 @@ def merge_dataset_as_single_file():
     combined_df.to_parquet(save_file_name)
 
 if __name__ == '__main__':
-    process_shareAI_data()
-    process_belle_data()
-    process_CQIA_data()
+    # process_shareAI_data()
+    # process_belle_data()
+    # process_CQIA_data()
     process_alpaca_data()
     merge_dataset_as_single_file()

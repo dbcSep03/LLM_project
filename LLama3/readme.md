@@ -12,7 +12,7 @@ llama2和llama3好像没有什么架构上的区别,主要看了transformers的L
 > attention_mask:都使用下三角和对角线为0 上三角为-inf的矩阵，因为核心理解为attention_mask 序列逐一预测 $\sum log \pi(t_i|t_{i-1}...t_0)$
 > loss_mask:pretrained直接计算loss 而sft对padding和prompt进行系数掩码 系数为0
 
-## Training data
+## Pretraining Training data
 * Wikipedia使用了 [zhwiki](https://dumps.wikimedia.org/zhwiki/)   
   * 使用了20240520下的Recombine articles, templates, media/file descriptions, and primary meta-pages. 共2.4GB
   * bz2转换为wiki.txt参考了 [WikiExtractor](https://github.com/apertium/WikiExtractor) 
@@ -82,8 +82,10 @@ loss图如下：
 第一次单卡训练，没训练完一个epoch意外停掉了，同时出现下图的loss
 ![torch_DDP_loss](img/torch_DDP.png)  
 
-可能是语料中差距太大，但是accelerate没有遇到，待第二次训练
+可能是语料中差距太大，但是accelerate没有遇到，待第二次训练； 中间发现意外，尝试使用A100，发现时间更慢了，从12h到23h
 
+
+## SFT Dataset 
 
 
 > 相关资料   

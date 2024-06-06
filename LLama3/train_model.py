@@ -1,6 +1,6 @@
 # 使用pytorch的DDP进行训练
 import os 
-os.environ['cuda_visible_devices'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '5'
 from src.models.model import LLamamodel
 from src.models.LLamadataset import LLamaDataset
 from src.models.config import modleConfig, trainConfig
@@ -51,7 +51,7 @@ def pretrain_by_pytorch():
             loss = criterion(logits, labels)
             loss_batch += loss.item()
             loss.backward()
-            wandb.log({'loss': loss.item()})
+            # wandb.log({'loss': loss.item()})
             if (idx + 1) % trainConfig.gradient_accumulation_steps == 0:
                 optimizer.step()
                 scheduler.step()
