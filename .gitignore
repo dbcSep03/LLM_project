@@ -181,3 +181,4 @@ LLama3/checkpoints/LLama_pretrain.pth/model.safetensors
 LLama3/best_model_pytorch/loss.txt
 LLama3/dataset/sft/*
 !LLama3/dataset/sft/.gitignore
+LLama3/checkpoints

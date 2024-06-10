@@ -10,7 +10,7 @@ def chat_bot():
     config = modleConfig(vocab_size = len(tokenizer), padding_idx=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id)
     
     model = LLamamodel(config)
-    model = load_checkpoint_and_dispatch(model, 'LLama3/checkpoints/LLama_pretrain.pth/model.safetensors', device_map='auto')
+    model = load_checkpoint_and_dispatch(model, 'LLama3/checkpoints/LLama_pretrain/model.safetensors', device_map='auto')
     while(True):
         text = input("input:")
         if text == 'exit':

@@ -26,3 +26,13 @@ class trainConfig:
     gradient_accumulation_steps: int = 8
     batch_size: int = 32
 
+@dataclass
+class SFTConfig:
+    tokenizer_path: str='LLama3/tokenizer/fast_tokenizer'
+    dataset_path: str='LLama3/dataset/sft/sft_data.parquet'
+    model_path: str='LLama3/checkpoints/LLama_pretrain/model.safetensors'
+    seq_length: int = 512
+    epochs: int = 8
+    gradient_accumulation_steps: int = 8
+    batch_size: int = 32
+
