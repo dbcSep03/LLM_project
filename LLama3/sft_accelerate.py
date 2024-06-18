@@ -1,6 +1,5 @@
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ["CUDA_VISIBLE_DEVICES"] = '4,5'
 from src.models.model import LLamamodel
 from src.models.config import modleConfig, SFTConfig
 
@@ -34,7 +33,6 @@ def pretrain_by_pytorch():
     # 训练集 测试集
     data = pd.read_parquet(SFTConfig.dataset_path)
     data = Dataset.from_pandas(data)
-    data = data.train_test_split()
     print(data)
     data = data.map(process_data,batched=True, fn_kwargs={'tokenizer': tokenizer, 'config': config}, remove_columns=data.column_names)
 
@@ -56,7 +54,7 @@ def pretrain_by_pytorch():
                 logits = logits[...,:-1,:].contiguous().view(-1, config.vocab_size)
                 labels = input_id[...,1:].contiguous().view(-1)
                 loss = criterion(logits, labels)/SFTConfig.gradient_accumulation_steps
-                # wandb.log({'loss': loss.item()})
+                wandb.log({'loss': loss.item()})
                 # print((loss*trainConfig.gradient_accumulation_steps).item())
                 # print(accelerator.device)
                 accelerator.backward(loss)
@@ -71,12 +69,12 @@ def pretrain_by_pytorch():
         
 
 if __name__ == '__main__':
-    # wandb.init(project='LLama3',
-    #         config={
-    #                 'model': 'LLama',
-    #                 'epochs': 8,
-    #                 'gradient_accumulation_steps': 8,
-    #                 'whether_multi_gpus': False,
-    #         })
+    wandb.init(project='LLama3',
+            config={
+                    'model': 'LLama',
+                    'epochs': 8,
+                    'gradient_accumulation_steps': 8,
+                    'whether_multi_gpus': False,
+            })
 
     pretrain_by_pytorch()
