@@ -15,9 +15,6 @@ from tqdm.auto import tqdm
 import wandb
 from datasets import Dataset
 
-def process_data(example, tokenizer, config):
-    input_ids = tokenizer(example['prompt'], return_tensors='pt', max_length=config.seq_length, padding='max_length', truncation=True)["input_ids"]
-    return {"input_ids": input_ids}
 def pretrain_by_pytorch():
     #加载tokenizer 和 model 并统计相关信息
     tokenizer = PreTrainedTokenizerFast.from_pretrained(SFTConfig.tokenizer_path)
@@ -31,13 +28,11 @@ def pretrain_by_pytorch():
     print(f"total parameters: {total_nums} trained parameters: {trained_nums} embedding parameters: {embedding_nums} model size: {total_nums/1e9:.2f}B")
     
     # 训练集 测试集
+
     data = pd.read_parquet(SFTConfig.dataset_path)
-    data = Dataset.from_pandas(data)
-    print(data)
-    data = data.map(process_data,batched=True, fn_kwargs={'tokenizer': tokenizer, 'config': config}, remove_columns=data.column_names)
 
     train_dataset = sftDataset(data, config=config, tokenizer=tokenizer)
-    train_dataloader = DataLoader(train_dataset, batch_size=SFTConfig.batch_size, shuffle=True, collate_fn=train_dataset.collate_fn, num_workers=4)
+    train_dataloader = DataLoader(train_dataset, batch_size=SFTConfig.batch_size, shuffle=True, collate_fn=train_dataset.collate_fn)
     optimizer = optim.Adam(model.parameters(), lr=5e-5)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, len(train_dataloader) * SFTConfig.epochs//SFTConfig.gradient_accumulation_steps)
     criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)

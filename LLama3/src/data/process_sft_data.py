@@ -10,6 +10,8 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import json
+from datasets import Dataset
+from transformers import PreTrainedTokenizerFast
 
 punctuation = set("!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~.,;《》？！“”‘’@#￥%…&×（）——+【】{};；●，。&～、|\s:：\n") # 标点符号
 data_dir = 'LLama3/dataset/raw'
@@ -289,9 +291,23 @@ def merge_dataset_as_single_file():
     
     combined_df.to_parquet(save_file_name)
 
+def text2token_dataset():
+    read_file_name = os.path.join(processed_file_dir, 'sft_data.parquet')
+    save_file_name = os.path.join(processed_file_dir, 'sft_data_token.parquet')
+    def process_data(example, tokenizer, seq_length):
+        input_ids = tokenizer(example['prompt'], return_tensors='pt', max_length=seq_length, padding='max_length', truncation=True)["input_ids"]
+        return {"input_ids": input_ids}
+    data = pd.read_parquet(read_file_name)
+    data = Dataset.from_pandas(data)
+    print(data)
+    tokenizer = PreTrainedTokenizerFast.from_pretrained('LLama3/tokenizer/fast_tokenizer')
+    data = data.map(process_data,batched=True, fn_kwargs={'tokenizer': tokenizer, 'seq_length': 512}, remove_columns=data.column_names)
+    data.to_parquet(save_file_name)
 if __name__ == '__main__':
     # process_shareAI_data()
     # process_belle_data()
     # process_CQIA_data()
-    process_alpaca_data()
-    merge_dataset_as_single_file()
+    # process_alpaca_data()
+    # merge_dataset_as_single_file()
+
+    text2token_dataset()

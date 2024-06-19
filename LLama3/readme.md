@@ -99,6 +99,8 @@ loss图如下：
   * alpaca数据集的中文
   * 总中文字符为5477887
 ## SFT Train
+再次尝试了pandas和datasets，感觉pandas要比datasets节省内存。
+使用命令 ```accelerate launch --multi-gpu {.py} ``` 代码在sft_accelerate.py
 
 > 相关资料   
 > 分词化：[BPE](https://github.com/karpathy/minbpe)   

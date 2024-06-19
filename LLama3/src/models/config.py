@@ -29,7 +29,7 @@ class trainConfig:
 @dataclass
 class SFTConfig:
     tokenizer_path: str='LLama3/tokenizer/fast_tokenizer'
-    dataset_path: str='LLama3/dataset/sft/sft_data.parquet'
+    dataset_path: str='LLama3/dataset/sft/sft_data_token.parquet'
     model_path: str='LLama3/checkpoints/LLama_pretrain/model.safetensors'
     seq_length: int = 512
     epochs: int = 8
