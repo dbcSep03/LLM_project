@@ -92,7 +92,7 @@ def process_line_data(prompt, response, response_less_word: int=15) ->dict:
     if len(response) < response_less_word:
         return None
     else:
-        return prompt + response + '<eos>'
+        return prompt + response + '<EOS>'
 
 
 
@@ -289,7 +289,7 @@ def process_wiki(groups_cnt=10000, max_len=512):
                     # 长度超了或者当前的百科已经结束，保存一条样例
                     keep_cnt += 1
                     response = '{}{}'.format(response, line)
-                    append({'prompt': prompt + response + '<eos>'})
+                    append({'prompt': prompt + response + '<EOS>'})
                     token_length += len(prompt) + len(response)
                     prompt = ''
                     response = ''
@@ -300,7 +300,7 @@ def process_wiki(groups_cnt=10000, max_len=512):
                 append = cur_rows.append
         if len(prompt) > 0 and len(response) > 0:
             keep_cnt += 1
-            append({'prompt': prompt + response + '<eos>'})
+            append({'prompt': prompt + response + '<EOS>'})
         if len(cur_rows) > 0:
             df = pd.DataFrame(cur_rows)
             write_single_parquet_file(save_file_name, df)
@@ -429,6 +429,9 @@ def get_pretrain_data(data_all_dir: str='LLama3/dataset/processed/all_data.parqu
         token_ids_all_dataframe = pd.DataFrame(token_ids_all)
         write_single_parquet_file(save_path, token_ids_all_dataframe)
     print(f"处理完成, token长度{token_ids_length}")
+    # pandas
+    data = pd.read_parquet(save_path,engine='fastparquet')
+    data.to_parquet(save_path)
 if __name__ == "__main__":
     # # 处理shareAI的数据
     # process_shareAI_data()

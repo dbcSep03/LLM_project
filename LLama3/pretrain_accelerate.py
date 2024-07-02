@@ -1,7 +1,6 @@
 import os
-# 使用40系显卡
-os.environ['NCCL_P2P_DISABLE'] = '1'
-os.environ['NCCL_IB_DISABLE'] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+
 from src.models.model import LLamamodel
 from src.models.LLamadataset import LLamaDataset
 from src.models.config import modleConfig, trainConfig
@@ -48,7 +47,7 @@ def pretrain_by_pytorch():
                 logits = logits[...,:-1,:].contiguous().view(-1, config.vocab_size)
                 labels = input_id[...,1:].contiguous().view(-1)
                 loss = criterion(logits, labels)/trainConfig.gradient_accumulation_steps
-                # wandb.log({'loss': loss.item()})
+                wandb.log({'loss': loss.item()})
                 # print((loss*trainConfig.gradient_accumulation_steps).item())
                 # print(accelerator.device)
                 accelerator.backward(loss)
@@ -58,17 +57,17 @@ def pretrain_by_pytorch():
         if loss.item() < best_loss:
             best_loss = loss.item()
             accelerator.wait_for_everyone()  # 必须加 让模型同步 
-            accelerator.save_model(model, f'LLama3/checkpoints/LLama_pretrain.pth')
+            accelerator.save_model(model, f'LLama3/checkpoints/LLama_pretrain')
         
         
 
 if __name__ == '__main__':
-    # wandb.init(project='LLama3',
-    #         config={
-    #                 'model': 'LLama',
-    #                 'epochs': 8,
-    #                 'gradient_accumulation_steps': 8,
-    #                 'whether_multi_gpus': False,
-    #         })
+    wandb.init(project='LLama3',
+            config={
+                    'model': 'LLama',
+                    'epochs': 8,
+                    'gradient_accumulation_steps': 8,
+                    'whether_multi_gpus': False,
+            })
 
     pretrain_by_pytorch()

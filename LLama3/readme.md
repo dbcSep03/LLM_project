@@ -63,10 +63,12 @@ loss图如下：
 
 演示效果：
 ![accelerate演示](img/accelerate-output.gif)
+
 很明显有以下问题 需要解决：
 * 输出重复
 * 前后语境不搭
-* <eos>未结束， tokenizer的时候有空格
+* \<eos>未结束， tokenizer的时候有空格  
+  * 该问题得到了解决，是因为在数据集预处理的时候采用了\<eos>但是tokenizer为<EOS>数据集需要重新处理，重新训练
 
 ### torchrun 双卡分布训练    
 机器为i7-12700KF+64G+双卡4090
@@ -99,8 +101,9 @@ loss图如下：
   * alpaca数据集的中文
   * 总中文字符为5477887
 ## SFT Train
-再次尝试了pandas和datasets，感觉pandas要比datasets节省内存。
-使用命令 ```accelerate launch --multi-gpu {.py} ``` 代码在sft_accelerate.py
+再次尝试了pandas和datasets，感觉pandas要比datasets节省内存。 使用命令 ```accelerate launch --multi-gpu {.py} ``` 代码在sft_accelerate.py
+
+
 
 > 相关资料   
 > 分词化：[BPE](https://github.com/karpathy/minbpe)   

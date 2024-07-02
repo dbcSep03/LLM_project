@@ -59,7 +59,7 @@ def pretrain_by_pytorch():
         if loss.item() < best_loss:
             best_loss = loss.item()
             accelerator.wait_for_everyone()  # 必须加 让模型同步 
-            accelerator.save_model(model, f'LLama3/checkpoints/LLama_sft.pth')
+            accelerator.save_model(model, f'LLama3/checkpoints/LLama_sft')
         
         
 
