@@ -1,5 +1,5 @@
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 from src.models.model import LLamamodel
 from src.models.config import modleConfig, SFTConfig
 

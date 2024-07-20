@@ -71,7 +71,7 @@ def process_line_data(prompt, response, response_less_word: int=15) ->dict:
     if len(response) < response_less_word:
         return None
     else:
-        return prompt + response + '<eos>'
+        return prompt + response + '<EOS>'
 
 
 def write_single_parquet_file(file_name: str, data: pd.DataFrame) ->None:

@@ -68,7 +68,13 @@ loss图如下：
 * 输出重复
 * 前后语境不搭
 * \<eos>未结束， tokenizer的时候有空格  
-  * 该问题得到了解决，是因为在数据集预处理的时候采用了\<eos>但是tokenizer为<EOS>数据集需要重新处理，重新训练
+  * 该问题得到了解决，是因为在数据集预处理的时候采用了\<eos>但是tokenizer为<EOS>数据集需要重新处理，重新训练  
+
+重新训练的结果如下
+
+![演示效果](img/accelerate-repretrain.gif)
+
+* 当使用正确的\<EOS>分词技术可以解决语境问题 取出来特殊的tokenizer,还剩下输出重复问题，可以使用生成时的一些生成track解决
 
 ### torchrun 双卡分布训练    
 机器为i7-12700KF+64G+双卡4090
@@ -78,13 +84,8 @@ loss图如下：
 * 训练速度 accelerate在bs=12的情况下，单卡显存为14G，但是一个epoch7h，而torchrun在bs=12时，显存为10G，但是一个epoch在72h多，很奇怪      
   * 我仔细想了一下，可能是我在accelerate config中设置了bf16,改完之后，并没有变得那么快，还是六十多个小时，但是显存降到了8.4G    
   * 感觉更加奇怪的是，我将双卡torchrun(pretrain_pytorch.py)代码改为单卡训练(pretrain_model.py),bs=12时，只需要12h(默认float32),就算没有连接桥，也不应该那么慢，很amazing    
-  * 欢迎帮忙修改，谢谢
   * 最终选择使用单卡训练 而不是双卡
 
-第一次单卡训练，没训练完一个epoch意外停掉了，同时出现下图的loss
-![torch_DDP_loss](img/torch_DDP.png)  
-
-可能是语料中差距太大，但是accelerate没有遇到，待第二次训练； 中间发现意外，尝试使用A100，发现时间更慢了，从12h到23h
 
 
 ## SFT Dataset 

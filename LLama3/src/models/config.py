@@ -34,5 +34,5 @@ class SFTConfig:
     seq_length: int = 512
     epochs: int = 8
     gradient_accumulation_steps: int = 8
-    batch_size: int = 16
+    batch_size: int = 8
 

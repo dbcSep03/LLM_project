@@ -1,4 +1,5 @@
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 import torch
 import torch.multiprocessing as mp
 import torch.distributed as dist

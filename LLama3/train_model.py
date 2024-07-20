@@ -59,7 +59,7 @@ def pretrain_by_pytorch():
                 
                 if (loss_batch/8) < best_loss:
                     best_loss = loss_batch/8
-                    torch.save(model.state_dict(), f'LLama3/best_model_pytorch/model_best.checkpoint')
+                    # torch.save(model.state_dict(), f'LLama3/best_model_pytorch/model_best.checkpoint')
                     with open('LLama3/best_model_pytorch/loss.txt', 'w') as f:
                         json.dump({'loss': best_loss, 'epoch': epoch+1, 'idx': idx+1}, f)
                 loss_batch = 0
@@ -67,11 +67,11 @@ def pretrain_by_pytorch():
 
 
 if __name__ == '__main__':
-    wandb.init(project='LLama3',
-        config={
-                'model': 'LLama',
-                'epochs': 8,
-                'gradient_accumulation_steps': 8,
-                'whether_multi_gpus': True,
-        })
+    # wandb.init(project='LLama3',
+    #     config={
+    #             'model': 'LLama',
+    #             'epochs': 8,
+    #             'gradient_accumulation_steps': 8,
+    #             'whether_multi_gpus': True,
+    #     })
     pretrain_by_pytorch()
