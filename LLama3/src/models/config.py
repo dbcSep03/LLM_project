@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 @dataclass
 class modleConfig:
     vocab_size: int
@@ -36,3 +37,8 @@ class SFTConfig:
     gradient_accumulation_steps: int = 8
     batch_size: int = 8
 
+@dataclass
+class loraConfig:
+    alpha: int = 16
+    r: int = 8
+    lora_name: List[str] = field(default_factory=lambda:['q', 'v', 'up_proj', 'gate_proj', 'down_proj'])

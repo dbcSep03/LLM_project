@@ -104,9 +104,87 @@ loss图如下：
 ## SFT Train
 再次尝试了pandas和datasets，感觉pandas要比datasets节省内存。 使用命令 ```accelerate launch --multi-gpu {.py} ``` 代码在sft_accelerate.py
 
+## LoRA_sft
+从零实现一个LoRA,本质上使用矩阵模拟权重的变化$\Delta w$,使用A@B来进行模型  
+在从普通的线性层修改成LoRA层，使用了递归的方法，model.named_children()和setattr(object, name, value)两个部分  
+模型架构从
+```
+LLamamodel(
+  (embedding): Embedding(30001, 1024, padding_idx=6)
+  (embedding_rmsnorm): RMSNorm()
+  (decoder): ModuleList(
+    (0-9): 10 x LLamaDecoder(
+      (input_norm): RMSNorm()
+      (self_attn): LLamaAttention(
+        (rotary_embedding): LlamaRotaryEmbedding()
+        (q): Linear(in_features=1024, out_features=1024, bias=False)
+        (k): Linear(in_features=1024, out_features=512, bias=False)
+        (v): Linear(in_features=1024, out_features=512, bias=False)
+        (o): Linear(in_features=1024, out_features=1024, bias=False)
+      )
+      (mlp): LLamaMLP(
+        (gate_proj): Linear(in_features=1024, out_features=2048, bias=False)
+        (up_proj): Linear(in_features=1024, out_features=2048, bias=False)
+        (down_proj): Linear(in_features=2048, out_features=1024, bias=False)
+        (act_fn): SiLU()
+      )
+      (post_attention_layernorm): RMSNorm()
+    )
+  )
+  (norm): RMSNorm()
+  (lm_head): Linear(in_features=1024, out_features=30001, bias=False)
+)
+```
+变成了
+```
+LoRA_model(
+  (model): LLamamodel(
+    (embedding): Embedding(30001, 1024, padding_idx=6)
+    (embedding_rmsnorm): RMSNorm()
+    (decoder): ModuleList(
+      (0-9): 10 x LLamaDecoder(
+        (input_norm): RMSNorm()
+        (self_attn): LLamaAttention(
+          (rotary_embedding): LlamaRotaryEmbedding()
+          (q): LinearLoRA(
+            (linear): Linear(in_features=1024, out_features=1024, bias=False)
+            (lora): LoRALayer()
+          )
+          (k): Linear(in_features=1024, out_features=512, bias=False)
+          (v): LinearLoRA(
+            (linear): Linear(in_features=1024, out_features=512, bias=False)
+            (lora): LoRALayer()
+          )
+          (o): Linear(in_features=1024, out_features=1024, bias=False)
+        )
+        (mlp): LLamaMLP(
+          (gate_proj): LinearLoRA(
+            (linear): Linear(in_features=1024, out_features=2048, bias=False)
+            (lora): LoRALayer()
+          )
+          (up_proj): LinearLoRA(
+            (linear): Linear(in_features=1024, out_features=2048, bias=False)
+            (lora): LoRALayer()
+          )
+          (down_proj): LinearLoRA(
+            (linear): Linear(in_features=2048, out_features=1024, bias=False)
+            (lora): LoRALayer()
+          )
+          (act_fn): SiLU()
+        )
+        (post_attention_layernorm): RMSNorm()
+      )
+    )
+    (norm): RMSNorm()
+    (lm_head): Linear(in_features=1024, out_features=30001, bias=False)
+  )
+)
+```
+微调了['q', 'v', 'up_proj', 'gate_proj', 'down_proj']，超参数为 r=8,alpha=16，一样使用accelerate 进行双卡训练
 
 
 > 相关资料   
 > 分词化：[BPE](https://github.com/karpathy/minbpe)   
 > LLama3 from scratch: [LLama3 from scratch](https://github.com/naklecha/llama3-from-scratch) (阿尼亚很可爱)   
 > RoPE: [知乎讲解 十分钟读懂旋转编码（RoPE）](https://www.zhihu.com/tardis/zm/art/647109286?source_id=1003) 
+> LoRA from scratch: [LoRA from scratch](https://lightning.ai/lightning-ai/studios/code-lora-from-scratch)
