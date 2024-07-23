@@ -3,6 +3,8 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from src.models.model import LLamamodel
 from accelerate import load_checkpoint_and_dispatch
+from src.models.config import loraConfig
+from src.models.lora import LoRA_model
 from transformers import PreTrainedTokenizerFast
 from src.models.config import modleConfig
 def chat_bot():
@@ -10,7 +12,13 @@ def chat_bot():
     config = modleConfig(vocab_size = len(tokenizer), padding_idx=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id)
     
     model = LLamamodel(config)
-    model = load_checkpoint_and_dispatch(model, 'LLama3/checkpoints/LLama_pretrain/model.safetensors', device_map='auto')
+    is_lora = True
+    if is_lora:
+        lora_config = loraConfig()
+        model = LoRA_model(model, lora_config.r, lora_config.alpha, lora_config.lora_name, tokenizer.eos_token_id)
+        model = load_checkpoint_and_dispatch(model, 'LLama3/checkpoints/LLama_sft_lora/model.safetensors', device_map='auto')
+    else:
+        model = load_checkpoint_and_dispatch(model, 'LLama3/checkpoints/LLama_sft/model.safetensors', device_map='auto')
     
     while(True):
         text = input("input:")

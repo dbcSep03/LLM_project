@@ -87,8 +87,8 @@ loss图如下：
   * 最终选择使用单卡训练 而不是双卡
 
 
-
-## SFT Dataset 
+## SFT
+### SFT Dataset 
 * [BELLE Group](https://huggingface.co/BelleGroup)   
   * 包含了[generated_chat_0.4M](https://huggingface.co/datasets/BelleGroup/generated_chat_0.4M) 和[train_0.5M_CN](https://huggingface.co/datasets/BelleGroup/train_0.5M_CN)
   * 总中文字符为274882143
@@ -101,10 +101,10 @@ loss图如下：
 * [lyuricky/alpaca_data_zh_51k](https://huggingface.co/datasets/lyuricky/alpaca_data_zh_51k)
   * alpaca数据集的中文
   * 总中文字符为5477887
-## SFT Train
+### SFT Train
 再次尝试了pandas和datasets，感觉pandas要比datasets节省内存。 使用命令 ```accelerate launch --multi-gpu {.py} ``` 代码在sft_accelerate.py
 
-## LoRA_sft
+### LoRA_SFT
 从零实现一个LoRA,本质上使用矩阵模拟权重的变化$\Delta w$,使用A@B来进行模型  
 在从普通的线性层修改成LoRA层，使用了递归的方法，model.named_children()和setattr(object, name, value)两个部分  
 模型架构从
@@ -182,7 +182,20 @@ LoRA_model(
 ```
 微调了['q', 'v', 'up_proj', 'gate_proj', 'down_proj']，超参数为 r=8,alpha=16，一样使用accelerate 进行双卡训练
 
+### SFT results
+SFT阶段，全参微调和lora微调的结果如下
+![SFT-finetuning/lora](img/sft_lora.png) 
 
+可以看到finetuning的loss损失比lora要低，全参微调的优势还是存在的
+### 演示效果
+下图是全参微调的结果
+![sft](img/sft.gif)
+
+下图是lora微调的效果
+![lora](img/lora.gif)
+
+经过微调，解决了一定的上下文语境的问题。我的理解是在预训练阶段没有padding的token，会将上下文的语境全部连续起来，而在sft阶段通过padding的存在，解决了一个序列只有一个语境，同时输出重复问题得到了改善，虽然这两次演示没有，但经过多次检测，还是会有该问题。可以通过改良generate的方法来对生成的方式提优。
+## DPO
 > 相关资料   
 > 分词化：[BPE](https://github.com/karpathy/minbpe)   
 > LLama3 from scratch: [LLama3 from scratch](https://github.com/naklecha/llama3-from-scratch) (阿尼亚很可爱)   
