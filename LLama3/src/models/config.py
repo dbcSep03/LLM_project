@@ -42,3 +42,13 @@ class loraConfig:
     alpha: int = 16
     r: int = 8
     lora_name: List[str] = field(default_factory=lambda:['q', 'v', 'up_proj', 'gate_proj', 'down_proj'])
+
+@dataclass
+class RlhfConfig:
+    tokenizer_path: str='LLama3/tokenizer/fast_tokenizer'
+    dataset_path: str='LLama3/dataset/processed/rlhf.parquet'
+    model_path: str='LLama3/checkpoints/LLama_sft/model.safetensors'
+    seq_length: int = 512
+    epochs: int = 2
+    gradient_accumulation_steps: int = 8
+    batch_size: int = 1
