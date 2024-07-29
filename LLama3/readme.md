@@ -197,7 +197,16 @@ SFT阶段，全参微调和lora微调的结果如下
 经过微调，解决了一定的上下文语境的问题。我的理解是在预训练阶段没有padding的token，会将上下文的语境全部连续起来，而在sft阶段通过padding的存在，解决了一个序列只有一个语境，同时输出重复问题得到了改善，虽然这两次演示没有，但经过多次检测，还是会有该问题。可以通过改良generate的方法来对生成的方式提优。
 
 ## DPO
-对强化学习有点不熟，先恶补了一下强化学习的相关知识，首先是强化学习的知识，[笔记](强化学习笔记.md)，然后是学习了RLHF的PPO方法到DPO方法的转换，[RLHF笔记](RLHF.md)，最终亲手实现了DPO方法。
+对强化学习有点不熟，先恶补了一下强化学习的相关知识，首先是强化学习的知识，[笔记](强化学习笔记.md)，然后是学习了RLHF的PPO方法到DPO方法的转换，[RLHF笔记](RLHF.md)，最终亲手实现了DPO方法。  
+核心公式为 $$\max_{\pi_\theta} \left\{ \mathbb{E}_{(x, y{\text{win}}, y_{\text{lose}}) \sim \mathcal{D}} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y_{\text{win}}|x)}{\pi_{\text{ref}}(y_{\text{win}}|x)} - \beta \log \frac{\pi_\theta(y_{\text{lose}}|x)}{\pi_{\text{ref}}(y_{\text{lose}}|x)} \right) \right] \right\}$$
+在实现的过程中觉得有意思点是：如何只对answer部分选取真实标签进行loss mask,最终利用tokenizer的token_type_id部分，prompt和padding为0，而answer部分为1，通过answer*input_id实现了prompt和padding任然为0，但是answer部分为真实id，使用torch.gather方法选取对应的token的logits。   
+loss部分如下：  
+![DPO_margins](img/DPO_margins.png)
+![DPO_reward_acciracoes](img/DPO_reward_accuracies.png)  
+
+在单卡2080ti上训练，bs=1,梯度累积为8，从图中可以看出：奖励的margins越来越大且将奖励正确的接近8，可以说起到了训练的效果。  
+训练脚本在LLama3/dpo.py。
+
 
 > 相关资料   
 > 分词化：[BPE](https://github.com/karpathy/minbpe)   
