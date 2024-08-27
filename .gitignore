@@ -184,3 +184,4 @@ LLama3/dataset/sft/*
 LLama3/dataset/DPO/*
 !LLama3/dataset/DPO/.gitignore
 LLama3/checkpoints
+inference_base/models
