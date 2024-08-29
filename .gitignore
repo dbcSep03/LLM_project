@@ -185,3 +185,5 @@ LLama3/dataset/DPO/*
 !LLama3/dataset/DPO/.gitignore
 LLama3/checkpoints
 inference_base/models
+inference_base/vllm_inference/weights/qwen_7b
+inference_base/vllm_inference/weights/qwen_7b_awq
